@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎄 圣诞粒子手势交互系统</title>
+    <title>🎄 圣诞粒子手势交互系统 (最小体积，最强结构)</title>
     <style>
+        /* 样式保持不变 */
         :root {
-            --primary-color: #00ff88; /* 圣诞绿 */
-            --accent-color: #ff3333; /* 铃铛红 */
+            --primary-color: #00ff88; 
+            --accent-color: #ff3333; 
             --bg-color: #050505;
             --glass-bg: rgba(20, 20, 20, 0.6);
             --border: 1px solid rgba(255, 255, 255, 0.1);
@@ -21,140 +22,62 @@
             user-select: none;
         }
 
-        /* 画布容器 */
         #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
         }
 
-        /* 加载动画 */
         #loader {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #000;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: var(--primary-color);
-            transition: opacity 0.5s;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #000; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--primary-color); transition: opacity 0.5s;
         }
         .loader-ring {
-            width: 60px; height: 60px;
-            border: 4px solid rgba(0, 255, 136, 0.1);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            width: 60px; height: 60px; border: 4px solid rgba(0, 255, 136, 0.1);
+            border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* UI 覆盖层 */
         .ui-layer {
-            position: absolute;
-            z-index: 10;
-            pointer-events: none;
-            width: 100%;
-            height: 100%;
+            position: absolute; z-index: 10; pointer-events: none; width: 100%; height: 100%;
         }
 
-        /* 摄像头 HUD */
         .camera-hud {
-            position: absolute;
-            bottom: 30px;
-            left: 30px;
-            width: 240px;
-            height: 180px;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            border: var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            pointer-events: auto;
+            position: absolute; bottom: 30px; left: 30px; width: 240px; height: 180px;
+            background: #000; border-radius: 12px; overflow: hidden; border: var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto;
         }
         #input-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* 镜像 */
-            opacity: 0.7;
+            width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.7;
         }
         .hud-status {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            font-size: 12px;
-            color: #fff;
-            background: rgba(0,0,0,0.6);
-            padding: 4px 8px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            position: absolute; bottom: 10px; left: 10px; font-size: 12px; color: #fff;
+            background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px;
+            display: flex; align-items: center; gap: 6px;
         }
         .status-dot {
-            width: 8px; height: 8px;
-            background: #ff3333;
-            border-radius: 50%;
-            box-shadow: 0 0 5px #ff3333;
+            width: 8px; height: 8px; background: #ff3333; border-radius: 50%; box-shadow: 0 0 5px #ff3333;
             transition: background 0.3s;
         }
         .status-dot.active { background: #00ff88; box-shadow: 0 0 5px #00ff88; }
 
-        /* 顶部标题与提示 */
         .header-info {
-            position: absolute;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            color: white;
-            pointer-events: none;
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+            text-align: center; color: white; pointer-events: none;
         }
         h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; font-weight: 300; opacity: 0.9; }
         p.subtitle { margin: 8px 0 0; font-size: 0.9rem; color: rgba(255,255,255,0.8); }
 
-        /* 全屏按钮 */
         .fs-btn {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            pointer-events: auto;
-            background: var(--glass-bg);
-            border: var(--border);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            position: absolute; bottom: 30px; right: 30px; pointer-events: auto;
+            background: var(--glass-bg); border: var(--border); color: white;
+            padding: 12px 24px; border-radius: 30px; cursor: pointer; backdrop-filter: blur(10px);
+            transition: all 0.3s; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
         }
-        .fs-btn:hover { background: rgba(255,255,255,0.2); }
-
     </style>
     
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-    <script src="https://unpkg.com/three@0.160.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://unpkg.com/three@0.160.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://unpkg.com/three@0.160.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -162,14 +85,14 @@
     <div id="loader">
         <div class="loader-ring"></div>
         <div>加载中... 启动视觉引擎和3D环境</div>
-        <div id="loader-status" style="font-size: 12px; margin-top: 10px; color: #999">请授予摄像头权限以进行交互</div>
+        <div id="loader-status" style="font-size: 12px; margin-top: 10px; color: #999">正在初始化 3D 渲染...</div>
     </div>
 
     <div id="canvas-container"></div>
 
     <div class="ui-layer">
         <div class="header-info">
-            <h1>圣诞粒子交互系统 🎄</h1>
+            <h1>Police们圣诞快乐 🎄</h1>
             <p class="subtitle" id="gesture-hint">握拳：粒子聚集成圣诞树 | 张开手掌：粒子扩散成飞雪</p>
         </div>
 
@@ -184,65 +107,52 @@
         <button class="fs-btn" onclick="toggleFullScreen()">⛶ Fullscreen</button>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-        // 引入辉光库（虽然不是模块，但为了使用 THREE.js 的命名空间，放在这里）
-        const EffectComposer = window.THREE.EffectComposer;
-        const RenderPass = window.THREE.RenderPass;
-        const UnrealBloomPass = window.THREE.UnrealBloomPass;
-
+    <script>
+        const THREE = window.THREE;
+        const Camera = window.Camera;
+        const Hands = window.Hands;
 
         const config = {
-            particleCount: 15000,
+            particleCount: 18000, 
             particleSize: 0.15,
-            baseColor: '#00ff44', // 圣诞树绿色
-            accentColor: '#ff0000', // 铃铛红色
-            shape: 'christmas_tree',
             handSensitivity: 3.0,
             smoothness: 0.1,
             idleAnimation: true,
-            bloomStrength: 1.5,
-            bloomThreshold: 0.0,
         };
 
         const state = {
             targetShapePositions: [],
-            scatteredPositions: [], // 新增：飞雪目标位置
-            targetColors: [],       // 新增：粒子目标颜色
-            handInfluence: 0,       // 0 (握拳/聚集) 到 1 (张开/扩散)
+            scatteredPositions: [], 
+            targetColors: [],       
+            handInfluence: 0,       
             smoothedInfluence: 0,
             time: 0
         };
 
-        let scene, camera, renderer, particles, geometry, material, controls, composer, bloomPass;
-        let positionsAttribute;
-
+        let scene, camera, renderer, particles, geometry, material;
 
         async function init() {
             if (initScene()) {
                 initParticles();
                 generateShape('christmas_tree'); 
-                initGUI(); 
                 
-                // 确保 Three.js 初始化完成后再启动 CV
+                document.getElementById('loader-status').innerHTML = '正在启动摄像头和 AI 模型...';
                 try {
                     await initComputerVision();
                     document.getElementById('loader').style.opacity = 0;
                     setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
                 } catch (e) {
-                    document.getElementById('loader-status').innerHTML = '⚠️ 摄像头启动失败，请检查 HTTPS 协议！';
+                    document.getElementById('loader-status').innerHTML = '⚠️ 摄像头启动失败！请检查 HTTPS 协议或浏览器设置。错误: ' + (e.message || e.name || 'Unknown Error');
                     console.error("CV Init Failed", e);
                 }
+            } else {
+                 document.getElementById('loader-status').innerHTML += ' ❌ 无法创建 3D 渲染环境。请尝试更换浏览器。';
             }
             animate();
         }
 
         function initScene() {
             const container = document.getElementById('canvas-container');
-
             if (!container || !window.WebGLRenderingContext) {
                  document.getElementById('loader-status').innerHTML = '⚠️ 设备不支持 WebGL 3D 渲染！';
                  return false;
@@ -252,31 +162,23 @@
             scene.fog = new THREE.FogExp2(0x050505, 0.02);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 25;
+            // 调整相机位置以适应更小的体积
+            camera.position.z = 8; 
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
+            try {
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.setClearColor(0x050505, 1); 
+                container.appendChild(renderer.domElement);
+                
+                scene.rotation.y = Math.PI;
 
-            controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.5;
-            controls.enableZoom = true; // 允许缩放
-
-            // --- 辉光效果 (Unreal Bloom Pass) ---
-            const renderPass = new RenderPass(scene, camera);
-            bloomPass = new UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight), 
-                config.bloomStrength, 
-                0.4, 
-                config.bloomThreshold
-            );
-            
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderPass);
-            composer.addPass(bloomPass);
+            } catch (e) {
+                 document.getElementById('loader-status').innerHTML = '⚠️ WebGL 渲染器创建失败。详细错误: ' + (e.message || '未知');
+                 console.error("Renderer setup failed:", e);
+                 return false;
+            }
 
             window.addEventListener('resize', onWindowResize);
             return true;
@@ -289,12 +191,12 @@
             const colors = new Float32Array(config.particleCount * 3);
             
             for (let i = 0; i < config.particleCount * 3; i++) {
-                // 初始化随机散布在空间
-                positions[i] = (Math.random() - 0.5) * 50;
+                // 散布范围进一步减小
+                positions[i] = (Math.random() - 0.5) * 20; 
             }
 
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3)); // 初始颜色将在 generateShape 中设置
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
             const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/spark1.png');
 
@@ -302,7 +204,7 @@
                 size: config.particleSize,
                 map: sprite,
                 vertexColors: true,
-                blending: THREE.AdditiveBlending, // 用于辉光效果
+                blending: THREE.AdditiveBlending, 
                 depthWrite: false,
                 transparent: true,
                 opacity: 0.8
@@ -310,11 +212,9 @@
 
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
-
-            positionsAttribute = geometry.attributes.position;
         }
 
-        // --- A. 核心修改：生成圣诞树模型 ---
+        // --- A. 核心修改：最小体积和最强结构感 ---
         function generateShape(type) {
             config.shape = type;
             const target = [];
@@ -322,13 +222,25 @@
             const scattered = [];
             const count = config.particleCount;
 
-            const treeColor = new THREE.Color(config.baseColor);
-            const accentColor = new THREE.Color(config.accentColor);
-            const trunkColor = new THREE.Color(0x795548); // 棕色树干
+            // --- 体积再次减半 ---
+            const treeHeight = 6; 
+            const baseRadius = 3;  
+            const totalLayers = 4; // 明确的层数
+            const layerHeight = treeHeight / totalLayers; // 1.5
+            const verticalGap = layerHeight * 0.25; // 25% 的层高作为垂直空隙 (0.375)
 
-            const treeHeight = 20;
-            const baseRadius = 10;
-            const layers = 5;
+            // --- 颜色调色板 ---
+            const CROWN_COLORS = [
+                new THREE.Color(0x00FF88), new THREE.Color(0x33CCFF), 
+                new THREE.Color(0xFFFF00), new THREE.Color(0xFF6600), 
+            ];
+            const ORNAMENT_COLORS = [
+                new THREE.Color(0xFF0000), new THREE.Color(0xFFD700), 
+                new THREE.Color(0x00FFFF), new THREE.Color(0xFFFFFF), 
+                new THREE.Color(0xFF00FF), 
+            ];
+            const STAR_COLOR = new THREE.Color(0xFFFFFF); 
+            const TRUNK_COLOR = new THREE.Color(0x795548); 
 
             for (let i = 0; i < count; i++) {
                 let x, y, z;
@@ -336,51 +248,75 @@
                 
                 const randomVal = Math.random();
 
-                if (randomVal < 0.85) { // 85% 粒子用于树冠
-                    const layer = Math.floor(Math.random() * layers);
-                    // 树冠 Y 位置 (从底部的-10到顶部的+10)
-                    const layerY = (layer / layers) * treeHeight - (treeHeight / 2) + 2; 
-                    
-                    // 半径随着Y轴（层数）的增加而减小 (锥形)
-                    const currentRadius = baseRadius * (1 - (layer / layers) * 0.9) * (Math.random() * 0.5 + 0.5);
-
+                if (randomVal < 0.02) { // 2% 粒子用于星
+                    y = treeHeight / 2 + 0.5; 
+                    const r = Math.random() * 0.3; // 星形缩小
                     const theta = Math.random() * Math.PI * 2;
-                    const r = Math.random() * currentRadius;
-                    
                     x = r * Math.cos(theta);
                     z = r * Math.sin(theta);
-                    // 增加垂直随机性，模拟多层树冠结构
-                    y = layerY + (Math.random() - 0.5) * 2.5; 
-                    
-                    color = treeColor;
+                    color = STAR_COLOR;
 
-                } else if (randomVal < 0.95) { // 10% 粒子用于铃铛/装饰 (白色/红色)
+                } else if (randomVal < 0.82) { // 80% 粒子用于树冠
+                    const layerIndex = Math.floor(Math.random() * totalLayers); 
+                    const layerBottomY = layerIndex * layerHeight - treeHeight / 2;
+                    
+                    // --- 关键：只在有效高度生成粒子，留出空隙 ---
+                    const activeHeight = layerHeight - verticalGap;
+                    y = layerBottomY + Math.random() * activeHeight;
+
+                    // 圆台计算
+                    const currentLayerNormalized = layerIndex / totalLayers;
+                    const nextLayerNormalized = (layerIndex + 1) / totalLayers;
+
+                    const bottomRadius = baseRadius * (1 - currentLayerNormalized) * 0.95; // 95%的锥形
+                    const topRadius = baseRadius * (1 - nextLayerNormalized) * 0.95;
+                    
+                    // 粒子在层内的垂直比例
+                    const vertRatioInLayer = (y - layerBottomY) / layerHeight; 
+                    
+                    const desiredRadius = bottomRadius + (topRadius - bottomRadius) * vertRatioInLayer;
+                    
+                    const actualRadius = desiredRadius * (Math.random() * 0.9); // 填充
+                    
+                    const theta = Math.random() * Math.PI * 2;
+                    x = actualRadius * Math.cos(theta);
+                    z = actualRadius * Math.sin(theta);
+                    
+                    y += (Math.random() - 0.5) * 0.5; // 减小垂直抖动
+                    
+                    color = CROWN_COLORS[i % CROWN_COLORS.length]; 
+
+                } else if (randomVal < 0.98) { // 16% 粒子用于装饰
+                    const heightFactor = Math.random();
+                    y = (heightFactor * treeHeight - (treeHeight / 2));
+                    
+                    const normalizedY = (y + treeHeight / 2) / treeHeight;
+                    const treeRadiusAtY = baseRadius * (1 - normalizedY);
+                    
+                    const r = treeRadiusAtY * (1.1 + Math.random() * 0.1); 
                     const angle = Math.random() * Math.PI * 2;
-                    const heightFactor = Math.random(); // 0到1
-                    const r = (baseRadius * 0.8) * (1 - heightFactor);
                     
                     x = r * Math.cos(angle);
                     z = r * Math.sin(angle);
-                    y = (heightFactor * treeHeight - (treeHeight / 2)) + Math.sin(state.time * 2 + i) * 0.5; // 轻微晃动
                     
-                    color = (i % 3 === 0) ? new THREE.Color(0xFFD700) : accentColor; // 金色和红色交替
+                    color = ORNAMENT_COLORS[i % ORNAMENT_COLORS.length];
 
-                } else { // 5% 粒子用于树干/底座
-                    const trunkWidth = 2;
+                } else { // 2% 粒子用于树干
+                    const trunkWidth = 0.8; // 树干更细
                     x = (Math.random() - 0.5) * trunkWidth;
                     z = (Math.random() - 0.5) * trunkWidth;
-                    y = -treeHeight / 2 - Math.random() * 4;
-                    color = trunkColor;
+                    y = -treeHeight / 2 - Math.random() * 1; 
+                    color = TRUNK_COLOR;
                 }
                 
                 target.push(x, y, z);
                 targetColors.push(color.r, color.g, color.b);
 
-                // 飞雪扩散位置 (均匀随机分布)
+                // 飞雪散布范围进一步减小
                 scattered.push(
-                    (Math.random() - 0.5) * 80, 
-                    (Math.random() - 0.5) * 80, 
-                    (Math.random() - 0.5) * 80
+                    (Math.random() - 0.5) * 20, 
+                    (Math.random() - 0.5) * 20, 
+                    (Math.random() - 0.5) * 20
                 );
             }
             
@@ -393,18 +329,14 @@
             requestAnimationFrame(animate);
             state.time += 0.01;
 
-            // B. 手势控制逻辑：平滑过渡
+            if (!renderer || !particles) return;
+
             state.smoothedInfluence += (state.handInfluence - state.smoothedInfluence) * config.smoothness;
             
-            // 扩散强度：influence=0 时 expansion=1 (聚集); influence=1 时 expansion>1 (扩散)
-            const expansionFactor = state.smoothedInfluence * config.handSensitivity * 20; 
-
             const positions = geometry.attributes.position.array;
             const colors = geometry.attributes.color.array;
 
-            // 区分目标位置：根据平滑影响力决定是模型还是飞雪
-            const finalTargetPositions = new Float32Array(config.particleCount * 3);
-            const influenceWeight = state.smoothedInfluence; // 0到1
+            const influenceWeight = state.smoothedInfluence;
 
             for (let i = 0; i < config.particleCount; i++) {
                 const ix = i * 3;
@@ -414,51 +346,43 @@
                 const modelX = state.targetShapePositions[ix];
                 const scatterX = state.scatteredPositions[ix];
 
-                // Lerp 在模型目标位置 和 飞雪目标位置 之间
-                // 结果是：影响因子越大，粒子目标越靠近散布位置
                 const tx = modelX + (scatterX - modelX) * influenceWeight;
                 const ty = state.targetShapePositions[iy] + (state.scatteredPositions[iy] - state.targetShapePositions[iy]) * influenceWeight;
                 const tz = state.targetShapePositions[iz] + (state.scatteredPositions[iz] - state.targetShapePositions[iz]) * influenceWeight;
 
-
-                // 粒子自身的运动（平滑过渡）
                 const transitionSpeed = 0.08; 
                 positions[ix] += (tx - positions[ix]) * transitionSpeed;
                 positions[iy] += (ty - positions[iy]) * transitionSpeed;
                 positions[iz] += (tz - positions[iz]) * transitionSpeed;
 
-
-                // 握拳时增加微小躁动
                 if (influenceWeight < 0.1 && config.idleAnimation) {
                     const noise = 0.05;
                     positions[ix] += Math.sin(state.time + i) * noise;
                     positions[iy] += Math.cos(state.time * 0.8 + i) * noise;
                 }
                 
-                // 飞雪状态下，增加轻微下落和Z轴随机移动
                 if (influenceWeight > 0.8) {
                     positions[iy] -= 0.05; 
-                    if (positions[iy] < -40) positions[iy] = 40; // 循环
-                    positions[iz] += Math.sin(state.time * 0.5 + i) * 0.005;
+                    if (positions[iy] < -10) positions[iy] = 10; // 循环范围再次减小
                 }
                 
-                // 颜色变化：扩散时颜色变白（模拟雪花光芒）
-                const r = state.targetColors[ix] + influenceWeight * 0.5;
-                const g = state.targetColors[iy] + influenceWeight * 0.5;
-                const b = state.targetColors[iz] + influenceWeight * 0.5;
-
-                colors[ix] = Math.min(1, r);
-                colors[iy] = Math.min(1, g);
-                colors[iz] = Math.min(1, b);
+                const targetR = state.targetColors[ix];
+                const targetG = state.targetColors[iy];
+                const targetB = state.targetColors[iz];
+                
+                const lerpFactor = influenceWeight * 0.7; 
+                
+                colors[ix] = targetR + (1 - targetR) * lerpFactor;
+                colors[iy] = targetG + (1 - targetG) * lerpFactor;
+                colors[iz] = targetB + (1 - targetB) * lerpFactor;
             }
 
             geometry.attributes.position.needsUpdate = true;
             geometry.attributes.color.needsUpdate = true;
             
-            controls.update();
-            
-            // 使用 EffectComposer 渲染以应用辉光
-            composer.render();
+            scene.rotation.y += 0.005;
+
+            renderer.render(scene, camera);
         }
 
         async function initComputerVision() {
@@ -488,7 +412,6 @@
             await camera.start();
         }
 
-        // --- B. 核心修改：张开/握拳逻辑 ---
         function onHandsResults(results) {
             const statusDot = document.getElementById('status-dot');
             const statusText = document.getElementById('status-text');
@@ -498,18 +421,14 @@
                 statusDot.classList.add('active');
                 
                 const landmarks = results.multiHandLandmarks[0];
-                const thumb = landmarks[4]; // 拇指尖
-                const pinky = landmarks[20]; // 小指尖
+                const thumb = landmarks[4]; 
+                const pinky = landmarks[20]; 
                 
-                // 计算拇指和小指的归一化距离
                 const distance = Math.sqrt(Math.pow(thumb.x - pinky.x, 2) + Math.pow(thumb.y - pinky.y, 2) + Math.pow(thumb.z - pinky.z, 2));
 
-                // 归一化到 0 到 1
-                let factor = (distance - 0.1) * 4.0; // 0.1 是握拳距离的估计值
+                let factor = (distance - 0.1) * 4.0; 
                 factor = Math.max(0, Math.min(1, factor));
 
-                // 握拳时 distance 小 (factor≈0)，张开时 distance 大 (factor≈1)
-                // state.handInfluence 0=聚集 (握拳)；1=扩散 (张开)
                 state.handInfluence = factor; 
 
                 statusText.innerText = `追踪成功 - ${state.handInfluence > 0.5 ? '张开' : '握拳'}`;
@@ -518,39 +437,17 @@
             } else {
                 statusDot.classList.remove('active');
                 statusText.innerText = "等待手势 - Searching...";
-                state.handInfluence = 0; // 未检测到时，默认聚集（握拳状态）
+                state.handInfluence = 0; 
                 hint.innerText = "请在摄像头前展示手掌 (默认为握拳模式)";
             }
         }
 
-        function initGUI() {
-            const gui = new GUI({ title: '控制台' });
-            gui.domElement.style.top = '20px';
-            gui.domElement.style.right = '20px';
-
-            const styleFolder = gui.addFolder('视觉参数 (Visuals)');
-            styleFolder.addColor(config, 'baseColor').name('树干颜色 (绿)');
-            styleFolder.addColor(config, 'accentColor').name('铃铛颜色 (红)');
-            styleFolder.add(config, 'particleSize', 0.05, 0.5).name('粒子大小').onChange(v => material.size = v);
-
-            const bloomFolder = gui.addFolder('C. 辉光效果 (Bloom)');
-            bloomFolder.add(config, 'bloomStrength', 0.1, 5.0).name('辉光强度').onChange(v => bloomPass.strength = v);
-            bloomFolder.add(config, 'bloomThreshold', 0.0, 1.0).name('辉光阈值').onChange(v => bloomPass.threshold = v);
-            bloomFolder.add(config, 'smoothness', 0.01, 0.5).name('粒子平滑度');
-
-            const handFolder = gui.addFolder('手势控制 (Gesture)');
-            handFolder.add(config, 'handSensitivity', 1, 5).name('扩散敏感度');
-            handFolder.add(config, 'idleAnimation').name('模型躁动');
-
-            styleFolder.open();
-            bloomFolder.open();
-        }
-
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight); // 调整 composer
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         }
 
         window.toggleFullScreen = function() {
