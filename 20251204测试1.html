@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎄 粒子圣诞树手势交互</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            font-family: Arial, sans-serif;
+            color: white;
+            text-align: center;
+        }
+        #webgl-container { 
+            position: absolute; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1; 
+        }
+        #video { 
+            display: none; 
+        } 
+        #info {
+            position: fixed;
+            top: 10px;
+            width: 100%;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            font-size: 14px;
+        }
+        #startButton {
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            padding: 20px 40px; 
+            font-size: 20px; 
+            z-index: 20; 
+            background: #FF4500; 
+            color: white; 
+            border: none; 
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(255, 69, 0, 0.6);
+            cursor: pointer;
+        }
+        #status-display {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.13.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469651/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection@0.0.6/dist/hand-pose-detection.min.js"></script>
+</head>
+<body>
+    <div id="webgl-container"></div>
+    <div id="info">
+        实时手势：<span id="gesture-status">未启动</span>
+        <br>
+        **握拳 (Closed):** 圣诞树 🎄 | **张开 (Open):** 飞雪 ❄️
+    </div>
+    <video id="video" playsinline></video>
+
+    <button id="startButton">
+        点击启动摄像头和3D系统
+        <div id="status-display">（需允许访问摄像头，并要求 HTTPS）</div>
+    </button>
+
+    <script>
+        // --- 全局变量 ---
+        let scene, camera, renderer, composer, particles;
+        let handDetector, videoElement, startButton;
+        let currentHandGesture = 'CLOSED';
+        const particleCount = 12000;
+        const modelPositions = [];
+        const scatteredPositions = [];
+        let time = 0;
+
+        // --- 核心工具函数 ---
+        function updateStatus(message, isError = false) {
+            const statusElement = document.getElementById('status-display');
+            statusElement.innerHTML = isError ? `<span class="error">${message}</span>` : message;
+        }
+
+        // --- Three.js 初始化 ---
+        function initThree() {
+            const container = document.getElementById('webgl-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 20;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 1);
+            container.appendChild(renderer.domElement);
+            
+            // 辉光设置
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new THREE.UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight), 1.0, 0.3, 0.9
+            );
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 模型生成 (保持不变) ---
+        function createModel() {
+            const treeHeight = 15;
+            const baseRadius = 6;
+
+            for (let i = 0; i < particleCount; i++) {
+                let x, y, z;
+                const r1 = Math.random(); 
+                const layerIndex = Math.floor(r1 * 4); 
+                const layerY = treeHeight * (layerIndex / 4) - (treeHeight / 2);
+                const layerRadius = baseRadius * (1 - (layerIndex / 4)) * 0.9;
+                
+                if (Math.random() < 0.95) { 
+                    const theta = Math.random() * Math.PI * 2;
+                    const r = Math.random() * layerRadius;
+                    x = r * Math.cos(theta);
+                    z = r * Math.sin(theta);
+                    y = layerY + (Math.random() - 0.5) * 2; 
+                } else { 
+                    x = (Math.random() - 0.5) * baseRadius * 0.5;
+                    z = (Math.random() - 0.5) * baseRadius * 0.5;
+                    y = (Math.random() - 0.5) * treeHeight * 1.1;
+                }
+
+                modelPositions.push(x, y, z);
+                
+                scatteredPositions.push(
+                    (Math.random() - 0.5) * 60, 
+                    (Math.random() - 0.5) * 60, 
+                    (Math.random() - 0.5) * 60
+                );
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(modelPositions), 3));
+
+            const particleTexture = createParticleTexture(); 
+            const material = new THREE.PointsMaterial({
+                color: 0x00FF00, 
+                size: 0.1,
+                map: particleTexture,
+                blending: THREE.AdditiveBlending, 
+                transparent: true,
+                depthWrite: false, 
+            });
+            
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
+
+        function createParticleTexture() {
+            const size = 64;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            
+            const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(0, 255, 0, 1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, size, size);
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- 粒子运动 (保持不变) ---
+        function updateParticles() {
+            time += 0.01;
+            const positions = particles.geometry.attributes.position.array;
+            const target = currentHandGesture === 'OPEN' ? scatteredPositions : modelPositions;
+            const speed = currentHandGesture === 'OPEN' ? 0.03 : 0.08; 
+
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                
+                let x = positions[i3];
+                let y = positions[i3 + 1];
+                let z = positions[i3 + 2];
+
+                const targetX = target[i3];
+                const targetY = target[i3 + 1];
+                const targetZ = target[i3 + 2];
+                
+                // Lerp
+                x += (targetX - x) * speed;
+                y += (targetY - y) * speed;
+                z += (targetZ - z) * speed;
+                
+                // 握拳躁动
+                if (currentHandGesture === 'CLOSED') {
+                    const noiseStrength = 0.015;
+                    x += Math.sin(time * 1.5 + i) * noiseStrength;
+                    y += Math.cos(time * 1.2 + i) * noiseStrength;
+                    z += Math.sin(time * 1.8 + i) * noiseStrength;
+                }
+                
+                // 飞雪下落
+                if (currentHandGesture === 'OPEN') {
+                    y -= 0.03; 
+                    if (y < -30) y = 30; 
+                }
+
+                positions[i3] = x;
+                positions[i3 + 1] = y;
+                positions[i3 + 2] = z;
+            }
+
+            particles.geometry.attributes.position.needsUpdate = true;
+            particles.rotation.y += 0.001; 
+        }
+
+        // --- 手势识别设置 (增强错误处理) ---
+        async function setupHandDetector() {
+            videoElement = document.getElementById('video');
+            startButton = document.getElementById('startButton');
+
+            startButton.disabled = true;
+            updateStatus('请求摄像头权限...');
+
+            try {
+                // 1. 获取前置摄像头权限
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user' 
+                    } 
+                });
+                videoElement.srcObject = stream;
+                await new Promise((resolve) => { videoElement.onloadedmetadata = resolve; });
+                videoElement.play();
+                updateStatus('摄像头就绪，正在加载AI模型...');
+                
+                // 2. 加载手部模型
+                const model = handPoseDetection.SupportedModels.MediaPipeHands;
+                const detectorConfig = { 
+                    runtime: 'mediapipe', 
+                    solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469651/' 
+                };
+                handDetector = await handPoseDetection.createDetector(model, detectorConfig);
+                
+                // 3. 成功启动
+                startButton.style.display = 'none';
+                document.getElementById('gesture-status').textContent = '握拳 🎄'; 
+                detectHands(); 
+
+            } catch (error) {
+                // 错误处理：将错误信息直接显示给用户
+                let message = `手势系统启动失败。错误类型: ${error.name}`;
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    message += ' (用户或系统拒绝访问摄像头，请检查浏览器和系统设置。)';
+                } else if (error.name === 'SecurityError') {
+                    message += ' (安全错误：**必须通过 HTTPS/安全域访问此页面。**)';
+                } else {
+                    message += ` (详细信息: ${error.message})`;
+                }
+                
+                updateStatus(message, true);
+                startButton.disabled = false;
+            }
+        }
+
+        // 检查手势 (保持不变)
+        function checkGesture(keypoints) {
+            const palmBase = keypoints[0];
+            const fingerTips = [keypoints[8], keypoints[12], keypoints[16], keypoints[20]]; 
+
+            let fingersOpen = 0;
+            const thresholdY = 50; 
+
+            fingerTips.forEach(tip => {
+                if (palmBase.y - tip.y > thresholdY) {
+                    fingersOpen++;
+                }
+            });
+
+            return fingersOpen >= 3 ? 'OPEN' : 'CLOSED';
+        }
+
+        // 实时手势检测循环 (保持不变)
+        async function detectHands() {
+            if (handDetector && videoElement.readyState >= 2) {
+                const hands = await handDetector.estimateHands(videoElement, {
+                    flipHorizontal: true 
+                });
+
+                if (hands.length > 0) {
+                    currentHandGesture = checkGesture(hands[0].keypoints);
+                }
+            }
+            
+            document.getElementById('gesture-status').textContent = currentHandGesture === 'OPEN' ? '张开 ❄️' : '握拳 🎄';
+            requestAnimationFrame(detectHands);
+        }
+
+        // --- 主程序启动 ---
+        function main() {
+            initThree();
+            createModel(); 
+            animate();
+            
+            document.getElementById('startButton').addEventListener('click', setupHandDetector);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateParticles(); 
+            composer.render(); 
+        }
+
+        main();
+    </script>
+</body>
+</html>
