@@ -322,13 +322,13 @@
             for (let i = 0; i < 4; i++) {
                 const texture = loader.load(urls[i]);
                 
-                const colors = [0xFF3333, 0xFFFF00, 0x00CCFF, 0xFF00FF];
-
+                // ！！！关键修改：使用基础设置，确保图片不透明，不叠加颜色
                 const material = new THREE.SpriteMaterial({ 
                     map: texture, 
-                    color: colors[i], 
-                    blending: THREE.AdditiveBlending,
-                    transparent: true
+                    // 移除 color: colors[i]
+                    // 移除 blending: THREE.AdditiveBlending
+                    transparent: true, // 保持透明度支持图片的alpha通道 (PNG), 但不影响主体不透明度
+                    opacity: 1.0,      // 确保不透明度为 100%
                 });
                 
                 const sprite = new THREE.Sprite(material);
@@ -430,9 +430,10 @@
                     data.targetScale = data.initialScale;
                 } else {
                     // 动态焦点效果
+                    // ！！！关键修改：将 Z 轴位置调整得更近 (8 -> 2.5)，使其更居中
                     data.targetX = Math.sin(state.time * 2) * 0.5; 
                     data.targetY = Math.cos(state.time * 1.5) * 0.5; 
-                    data.targetZ = 5 + Math.sin(state.time * 4) * 0.2; 
+                    data.targetZ = 2.5 + Math.sin(state.time * 4) * 0.2; // Z 轴拉近
                     data.targetScale = 8; 
                 }
 
