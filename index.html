@@ -322,12 +322,17 @@
             for (let i = 0; i < 4; i++) {
                 const texture = loader.load(urls[i]);
                 
-                // ！！！关键修改 1：明确设置 NormalBlending，防止粒子染色
+                // ！！！关键修改：禁用深度测试
                 const material = new THREE.SpriteMaterial({ 
                     map: texture, 
                     transparent: true, 
                     opacity: 1.0,      
-                    blending: THREE.NormalBlending // <--- 确保使用正常混合模式 (Fix 1)
+                    blending: THREE.NormalBlending,
+                    
+                    // <--- 新增/修改：禁用深度测试
+                    depthTest: false, // 禁用深度测试
+                    depthWrite: false, // 禁用深度写入
+                    // ------------------------------------
                 });
                 
                 const sprite = new THREE.Sprite(material);
