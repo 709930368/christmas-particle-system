@@ -322,13 +322,12 @@
             for (let i = 0; i < 4; i++) {
                 const texture = loader.load(urls[i]);
                 
-                // ！！！关键修改：使用基础设置，确保图片不透明，不叠加颜色
+                // ！！！关键修改 1：明确设置 NormalBlending，防止粒子染色
                 const material = new THREE.SpriteMaterial({ 
                     map: texture, 
-                    // 移除 color: colors[i]
-                    // 移除 blending: THREE.AdditiveBlending
-                    transparent: true, // 保持透明度支持图片的alpha通道 (PNG), 但不影响主体不透明度
-                    opacity: 1.0,      // 确保不透明度为 100%
+                    transparent: true, 
+                    opacity: 1.0,      
+                    blending: THREE.NormalBlending // <--- 确保使用正常混合模式 (Fix 1)
                 });
                 
                 const sprite = new THREE.Sprite(material);
@@ -434,7 +433,7 @@
                     data.targetX = Math.sin(state.time * 2) * 0.5; 
                     data.targetY = Math.cos(state.time * 1.5) * 0.5; 
                     data.targetZ = 2.5 + Math.sin(state.time * 4) * 0.2; // Z 轴拉近
-                    data.targetScale = 8; 
+                    data.targetScale = 5; 
                 }
 
                 // 平滑过渡
