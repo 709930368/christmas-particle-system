@@ -52,8 +52,11 @@
             color: #ccc;
         }
         .error {
-            color: red;
+            color: #FF6347; /* 红色调试信息 */
             font-weight: bold;
+            display: block;
+            margin-top: 5px;
+            padding: 2px;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -76,7 +79,7 @@
 
     <button id="startButton">
         点击启动摄像头和3D系统
-        <div id="status-display">（需允许访问摄像头，并要求 HTTPS）</div>
+        <div id="status-display">（请使用 HTTPS 链接访问）</div>
     </button>
 
     <script>
@@ -88,8 +91,9 @@
         const modelPositions = [];
         const scatteredPositions = [];
         let time = 0;
+        let isRendererReady = false;
 
-        // --- 核心工具函数 ---
+        // --- 核心工具函数：用于调试信息 ---
         function updateStatus(message, isError = false) {
             const statusElement = document.getElementById('status-display');
             statusElement.innerHTML = isError ? `<span class="error">${message}</span>` : message;
@@ -98,36 +102,53 @@
         // --- Three.js 初始化 ---
         function initThree() {
             const container = document.getElementById('webgl-container');
+            
+            // WebGL兼容性检查
+            if (!container || !window.WebGLRenderingContext) {
+                 updateStatus('错误：您的设备或浏览器不支持 WebGL。', true);
+                 return false;
+            }
+
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 20;
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x000000, 1);
-            container.appendChild(renderer.domElement);
-            
-            // 辉光设置
-            const renderScene = new RenderPass(scene, camera);
-            const bloomPass = new THREE.UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight), 1.0, 0.3, 0.9
-            );
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
-            composer.addPass(bloomPass);
+            try {
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setClearColor(0x000000, 1);
+                container.appendChild(renderer.domElement);
+                
+                // 辉光设置
+                const renderScene = new THREE.RenderPass(scene, camera);
+                const bloomPass = new THREE.UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight), 1.0, 0.3, 0.9
+                );
+                composer = new THREE.EffectComposer(renderer);
+                composer.addPass(renderScene);
+                composer.addPass(bloomPass);
 
-            window.addEventListener('resize', onWindowResize);
+                window.addEventListener('resize', onWindowResize);
+                isRendererReady = true;
+                updateStatus('Three.js 渲染器初始化成功。');
+                return true;
+            } catch (e) {
+                updateStatus('错误：Three.js 渲染器创建失败。', true);
+                return false;
+            }
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
+            if (camera && renderer && composer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            }
         }
 
-        // --- 模型生成 (保持不变) ---
+        // --- 模型生成 ---
         function createModel() {
             const treeHeight = 15;
             const baseRadius = 6;
@@ -146,6 +167,7 @@
                     z = r * Math.sin(theta);
                     y = layerY + (Math.random() - 0.5) * 2; 
                 } else { 
+                    // 配饰点
                     x = (Math.random() - 0.5) * baseRadius * 0.5;
                     z = (Math.random() - 0.5) * baseRadius * 0.5;
                     y = (Math.random() - 0.5) * treeHeight * 1.1;
@@ -195,7 +217,7 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- 粒子运动 (保持不变) ---
+        // --- 粒子运动和渲染循环 ---
         function updateParticles() {
             time += 0.01;
             const positions = particles.geometry.attributes.position.array;
@@ -241,13 +263,21 @@
             particles.rotation.y += 0.001; 
         }
 
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isRendererReady && particles) {
+                updateParticles(); 
+                composer.render(); 
+            }
+        }
+
         // --- 手势识别设置 (增强错误处理) ---
         async function setupHandDetector() {
             videoElement = document.getElementById('video');
             startButton = document.getElementById('startButton');
 
             startButton.disabled = true;
-            updateStatus('请求摄像头权限...');
+            updateStatus('正在请求摄像头权限...');
 
             try {
                 // 1. 获取前置摄像头权限
@@ -259,7 +289,7 @@
                 videoElement.srcObject = stream;
                 await new Promise((resolve) => { videoElement.onloadedmetadata = resolve; });
                 videoElement.play();
-                updateStatus('摄像头就绪，正在加载AI模型...');
+                updateStatus('摄像头就绪，正在加载AI模型 (约 1-3MB)...');
                 
                 // 2. 加载手部模型
                 const model = handPoseDetection.SupportedModels.MediaPipeHands;
@@ -272,26 +302,29 @@
                 // 3. 成功启动
                 startButton.style.display = 'none';
                 document.getElementById('gesture-status').textContent = '握拳 🎄'; 
+                updateStatus('手势系统完全启动成功！');
                 detectHands(); 
 
             } catch (error) {
                 // 错误处理：将错误信息直接显示给用户
-                let message = `手势系统启动失败。错误类型: ${error.name}`;
+                let message = `系统启动失败。错误类型: ${error.name || 'Unknown'}`;
                 
                 if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                    message += ' (用户或系统拒绝访问摄像头，请检查浏览器和系统设置。)';
+                    message += ' (用户或系统拒绝访问摄像头，请检查权限设置。)';
                 } else if (error.name === 'SecurityError') {
-                    message += ' (安全错误：**必须通过 HTTPS/安全域访问此页面。**)';
+                    message += ' (安全错误：**必须通过 HTTPS 访问此页面**。)';
                 } else {
-                    message += ` (详细信息: ${error.message})`;
+                    // 可能是模型加载失败 (网络问题)
+                    message += ` (模型/网络错误: 请检查 CDN 连接。详细信息: ${error.message})`;
                 }
                 
                 updateStatus(message, true);
                 startButton.disabled = false;
+                document.getElementById('gesture-status').textContent = '失败，保持默认模式 🎄';
             }
         }
 
-        // 检查手势 (保持不变)
+        // 检查手势
         function checkGesture(keypoints) {
             const palmBase = keypoints[0];
             const fingerTips = [keypoints[8], keypoints[12], keypoints[16], keypoints[20]]; 
@@ -300,6 +333,7 @@
             const thresholdY = 50; 
 
             fingerTips.forEach(tip => {
+                // 如果指尖Y坐标远小于掌根Y坐标 (手指伸直)
                 if (palmBase.y - tip.y > thresholdY) {
                     fingersOpen++;
                 }
@@ -308,11 +342,12 @@
             return fingersOpen >= 3 ? 'OPEN' : 'CLOSED';
         }
 
-        // 实时手势检测循环 (保持不变)
+        // 实时手势检测循环
         async function detectHands() {
             if (handDetector && videoElement.readyState >= 2) {
                 const hands = await handDetector.estimateHands(videoElement, {
-                    flipHorizontal: true 
+                    flipHorizontal: true,
+                    maxHands: 1
                 });
 
                 if (hands.length > 0) {
@@ -326,21 +361,15 @@
 
         // --- 主程序启动 ---
         function main() {
-            initThree();
-            createModel(); 
-            animate();
+            if (initThree()) {
+                createModel(); 
+                animate();
+            }
             
             document.getElementById('startButton').addEventListener('click', setupHandDetector);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            updateParticles(); 
-            composer.render(); 
         }
 
         main();
     </script>
 </body>
-
 </html>
